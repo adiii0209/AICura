@@ -1,6 +1,6 @@
 # AICura – Virtual Health Assistant
 
-An AI-enabled symptom checker that gives a **preliminary** view of possible conditions, an urgency level, basic treatment / self-care suggestions, and a follow-up Q&A chat. Mobile-first, installable-feeling UI, light & dark themes.
+A symptom checker that gives a **preliminary** view of possible conditions, an urgency level, basic treatment and self-care suggestions, and follow-up Q&A. iOS-inspired monochrome interface, mobile-first, light and dark themes.
 
 > ⚠️ AICura is an informational prototype. It does not diagnose and is not a substitute for professional medical advice. In an emergency call your local emergency number.
 
@@ -30,7 +30,7 @@ Import the repo in Vercel and deploy with the defaults (Framework: **Other**, no
 
 ## Enabling Gemini
 
-Open **Settings** (slider icon) and paste a key from [Google AI Studio](https://aistudio.google.com/apikey). The key is stored only in your browser's `localStorage` and sent directly to Google's API. Without a key (or with "Force demo mode"), the built-in rule-based engine in `js/engine.js` is used.
+Open **Settings** (slider icon, top right) and paste a key from [Google AI Studio](https://aistudio.google.com/apikey). The key is stored only in your browser's `localStorage` and sent directly to Google's API. Without a key (or with "Basic mode" on), the built-in rule-based engine in `js/engine.js` is used.
 
 > For a production deployment, proxy Gemini calls through a small serverless function so the key never reaches the browser.
 

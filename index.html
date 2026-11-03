@@ -3,9 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AICura – Virtual Health Assistant</title>
-  <meta name="description" content="AICura: an AI-powered virtual health assistant for early symptom analysis and preliminary guidance." />
-  <meta name="theme-color" content="#0f766e" />
+  <title>AICura – Symptom Checker</title>
+  <meta name="description" content="Check your symptoms and know what to do next. Preliminary guidance on possible causes, urgency and self-care." />
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="AICura" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta property="og:title" content="AICura" />
+  <meta property="og:description" content="Check your symptoms and know what to do next." />
+  <meta property="og:type" content="website" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,9 +31,8 @@
   </script>
 </head>
 <body>
-  <div id="root">
-    <div class="boot">Loading AICura…</div>
-  </div>
+  <div id="root"><div class="boot" role="status">Loading…</div></div>
+  <noscript><p style="padding:24px;font-family:system-ui">AICura needs JavaScript to run.</p></noscript>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

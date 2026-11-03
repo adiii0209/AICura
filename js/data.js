@@ -18,7 +18,7 @@ export const SYMPTOMS = [
   { id: 'sneezing', label: 'Sneezing', aliases: ['sneez'] },
   { id: 'itchy_eyes', label: 'Itchy / watery eyes', aliases: ['itchy eyes', 'watery eyes', 'red eyes'] },
   { id: 'headache', label: 'Headache', aliases: ['headache', 'head ache', 'head hurts', 'head pain', 'migraine'] },
-  { id: 'light_sensitivity', label: 'Light sensitivity', aliases: ['light sensitiv', 'photophobia', 'bright light'] },
+  { id: 'light_sensitivity', label: 'Light sensitivity', aliases: ['light sensitiv', 'sensitive to light', 'sensitive to bright', 'photophobia', 'bright light', 'light hurts'] },
   { id: 'nausea', label: 'Nausea', aliases: ['nausea', 'nauseous', 'queasy', 'sick to my stomach'] },
   { id: 'vomiting', label: 'Vomiting', aliases: ['vomit', 'throwing up', 'threw up'] },
   { id: 'diarrhea', label: 'Diarrhea', aliases: ['diarrhea', 'diarrhoea', 'loose stool', 'loose motion'] },

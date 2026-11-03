@@ -4,57 +4,67 @@ import { SYMPTOMS, COMMON_SYMPTOM_IDS, HEALTH_CONDITIONS, URGENCY } from './data
 import { parseText, symptomLabel, demoChat } from './engine.js';
 import { geminiChat, DEFAULT_MODEL } from './gemini.js';
 
-export function Disclaimer() {
-  return html`<div className="disclaimer">
-    <${Icon} name="shield" size=${16} />
-    <span><b>Not medical advice.</b> AICura gives preliminary, informational guidance only and cannot diagnose. In an emergency call your local emergency number.</span>
-  </div>`;
+/* ───────────── Building blocks (iOS grouped-list vocabulary) ───────────── */
+function Group({ title, footer, children }) {
+  return html`<section className="group">
+    ${title && html`<h4 className="group-h">${title}</h4>`}
+    <div className="list">${children}</div>
+    ${footer && html`<p className="group-f">${footer}</p>`}
+  </section>`;
 }
 
-/* ───────────────────────── Home ───────────────────────── */
-export function Home({ onStart, onHistory, mode, historyCount }) {
-  const steps = [
-    ['user', 'Tell us about you', 'Age, sex and any existing conditions help tailor the guidance.'],
-    ['stethoscope', 'Describe symptoms', 'Type in your own words, speak, or tap common symptoms.'],
-    ['sparkles', 'Get guidance', 'See likely causes, urgency level, care tips and when to see a doctor.'],
-  ];
-  return html`<div className="stack-lg fade-in">
-    <section className="hero">
-      <span className="pill"><${Icon} name="sparkles" size=${14} /> AI-powered early symptom insight</span>
-      <h1>Understand your symptoms,<br /><span className="grad">before they worry you.</span></h1>
-      <p className="lead">AICura analyzes how you feel and offers a preliminary view of possible causes, how urgent it may be, and what you can do next.</p>
-      <div className="row wrap center-m">
-        <button className="btn primary lg" onClick=${onStart}>Start symptom check <${Icon} name="arrowRight" size=${18} /></button>
-        ${historyCount > 0 && html`<button className="btn ghost lg" onClick=${onHistory}>View history (${historyCount})</button>`}
-      </div>
-      <div className=${'mode ' + (mode.gemini ? 'on' : '')}>
-        <span className="dot"></span>${mode.gemini ? `Gemini connected · ${mode.model}` : 'Demo mode · built-in engine (add a Gemini key in Settings for full AI)'}
-      </div>
-    </section>
+function Row({ icon, red, title, sub, trail, onClick, chevron, tick, danger }) {
+  const Tag = onClick ? 'button' : 'div';
+  return html`<${Tag} className=${'row' + (icon ? ' has-ico' : '') + (danger ? ' danger' : '')} onClick=${onClick}>
+    ${icon && html`<span className=${'ico' + (red ? ' red' : '')}><${Icon} name=${icon} size=${17} /></span>`}
+    <span className="body"><span className="t">${title}</span>${sub && html`<span className="s">${sub}</span>`}</span>
+    ${trail != null && html`<span className="trail">${trail}</span>`}
+    ${tick && html`<span className="tick"><${Icon} name="check" size=${18} /></span>`}
+    ${chevron && html`<span className="chev"><${Icon} name="chevronRight" size=${16} /></span>`}
+  </${Tag}>`;
+}
 
-    <section className="grid3">
-      ${steps.map(
-        ([icon, title, text], i) => html`<div className="card feature" key=${title}>
-          <div className="icon-badge"><${Icon} name=${icon} size=${20} /></div>
-          <div className="step-n">0${i + 1}</div>
-          <h3>${title}</h3>
-          <p className="muted">${text}</p>
-        </div>`
-      )}
-    </section>
+export function Meter({ level, small }) {
+  const emergency = level === 3;
+  return html`<span className=${'meter' + (small ? ' sm' : '') + (emergency ? ' red' : '')} aria-hidden="true">
+    ${[0, 1, 2, 3].map((i) => html`<i key=${i} className=${i <= level ? 'on' : ''}></i>`)}
+  </span>`;
+}
 
-    <section className="card emergency-card">
-      <div className="icon-badge red"><${Icon} name="phone" size=${20} /></div>
-      <div>
-        <h3>Having an emergency?</h3>
-        <p className="muted">Chest pain, trouble breathing, sudden weakness or numbness, confusion, or severe bleeding need immediate care. Call <b>112 / 911 / 999</b> – don't wait for an online tool.</p>
-      </div>
-    </section>
+export function Disclaimer() {
+  return html`<p className="disclaimer"><b>Not medical advice.</b> AICura gives preliminary, informational guidance and cannot diagnose. In an emergency, call your local emergency number.</p>`;
+}
+
+/* ───────────── Home ───────────── */
+export function Home({ onStart, onHistory, historyCount }) {
+  return html`<div className="page fade-in">
+    <header className="large">
+      <h1>AICura</h1>
+      <p className="lead">Check your symptoms and know what to do next.</p>
+    </header>
+
+    <div style=${{ marginTop: 24 }}>
+      <button className="btn primary block" onClick=${onStart}>Start symptom check</button>
+    </div>
+
+    <${Group} title="How it works">
+      <${Row} icon="user" title="Tell us about you" sub="Age, sex and any existing conditions." />
+      <${Row} icon="stethoscope" title="Describe your symptoms" sub="Type, speak or tap what you're feeling." />
+      <${Row} icon="check" title="Get guidance" sub="Likely causes, urgency and what to do next." />
+    <//>
+
+    ${historyCount > 0 && html`<${Group} title="Your checks">
+      <${Row} icon="history" title="History" trail=${historyCount} chevron onClick=${onHistory} />
+    <//>`}
+
+    <${Group}>
+      <${Row} icon="phone" red title="In an emergency" sub="Chest pain, trouble breathing, sudden weakness or confusion: call 112 / 911 / 999." />
+    <//>
     <${Disclaimer} />
   </div>`;
 }
 
-/* ───────────────────────── Wizard ───────────────────────── */
+/* ───────────── Wizard ───────────── */
 const DURATIONS = [
   ['today', 'Less than a day'],
   ['days', '1–3 days'],
@@ -63,6 +73,11 @@ const DURATIONS = [
   ['month', 'Over a month'],
 ];
 const sevText = (n) => (n <= 3 ? 'Mild' : n <= 6 ? 'Moderate' : n <= 8 ? 'Severe' : 'Very severe');
+const STEP_COPY = [
+  ['About you', 'This helps tailor the guidance.'],
+  ['Symptoms', 'Describe it in your own words, or pick from the list.'],
+  ['Details', 'How long, and how bad? This affects urgency.'],
+];
 
 export function Wizard({ initial, onSubmit, busy }) {
   const [step, setStep] = useState(0);
@@ -73,9 +88,8 @@ export function Wizard({ initial, onSubmit, busy }) {
   const toggle = (k, v) => setD((p) => ({ ...p, [k]: p[k].includes(v) ? p[k].filter((x) => x !== v) : [...p[k], v] }));
 
   const parsed = useMemo(() => parseText(d.text), [d.text]);
-  const picked = [...new Set([...d.symptoms, ...parsed])];
   const age = Number(d.age);
-  const valid = [age >= 0 && age <= 120 && d.age !== '' && !!d.sex, picked.length > 0 || d.text.trim().length > 3, true];
+  const valid = [age >= 0 && age <= 120 && d.age !== '' && !!d.sex, d.symptoms.length > 0 || parsed.length > 0 || d.text.trim().length > 3, true];
 
   const SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
   function mic() {
@@ -94,88 +108,85 @@ export function Wizard({ initial, onSubmit, busy }) {
     setListening(true);
   }
 
-  const titles = ['About you', 'Your symptoms', 'Details'];
   const next = () => (step < 2 ? setStep(step + 1) : onSubmit(d));
+  const [title, sub] = STEP_COPY[step];
 
-  return html`<div className="wizard fade-in">
-    <div className="progress" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow=${step + 1}>
-      ${titles.map((t, i) => html`<div key=${t} className=${'pstep ' + (i < step ? 'done' : i === step ? 'active' : '')}>
-        <span className="pnum">${i < step ? html`<${Icon} name="check" size=${14} />` : i + 1}</span><span className="plabel">${t}</span>
-      </div>`)}
+  return html`<div className="page fade-in">
+    <div className="steps">
+      <span className="caption">Step ${step + 1} of 3</span>
+      <span className="dashes">${[0, 1, 2].map((i) => html`<i key=${i} className=${i <= step ? 'on' : ''}></i>`)}</span>
     </div>
+    <header><h1 className="title-2">${title}</h1><p className="lead">${sub}</p></header>
 
-    <div className="card wiz-card">
-      ${step === 0 && html`<div className="stack">
-        <div><h2>Let's start with the basics</h2><p className="muted">This helps tailor the guidance. Nothing leaves your device except the analysis request.</p></div>
-        <label className="field"><span>Age</span>
-          <input type="number" inputMode="numeric" min="0" max="120" placeholder="e.g. 32" value=${d.age} onInput=${(e) => set('age', e.target.value)} />
+    ${step === 0 && html`<div>
+      <${Group}>
+        <label className="row field-row"><span className="t">Age</span>
+          <input type="number" inputMode="numeric" min="0" max="120" placeholder="Years" value=${d.age} onInput=${(e) => set('age', e.target.value)} />
         </label>
-        <div className="field"><span>Sex</span>
-          <div className="seg">
-            ${['Female', 'Male', 'Other'].map((s) => html`<button key=${s} type="button" className=${d.sex === s ? 'on' : ''} onClick=${() => set('sex', s)}>${s}</button>`)}
-          </div>
-        </div>
-        <div className="field"><span>Existing conditions <i className="muted">(optional)</i></span>
-          <div className="chips">
-            ${HEALTH_CONDITIONS.map((c) => html`<button key=${c} type="button" className=${'chip ' + (d.conditions.includes(c) ? 'on' : '')} onClick=${() => toggle('conditions', c)}>${c}</button>`)}
-          </div>
-        </div>
-      </div>`}
+      <//>
+      <${Group} title="Sex">
+        <div className="pad"><div className="seg">
+          ${['Female', 'Male', 'Other'].map((s) => html`<button key=${s} type="button" className=${d.sex === s ? 'on' : ''} onClick=${() => set('sex', s)}>${s}</button>`)}
+        </div></div>
+      <//>
+      <${Group} title="Existing conditions" footer="Optional. Select any that apply.">
+        ${HEALTH_CONDITIONS.map((c) => html`<${Row} key=${c} title=${c} tick=${d.conditions.includes(c)} onClick=${() => toggle('conditions', c)} />`)}
+      <//>
+    </div>`}
 
-      ${step === 1 && html`<div className="stack">
-        <div><h2>What are you experiencing?</h2><p className="muted">Describe it in your own words and/or tap symptoms below.</p></div>
+    ${step === 1 && html`<div>
+      <${Group} title="In your words">
         <div className="textwrap">
-          <textarea rows="4" placeholder="e.g. I've had a sore throat and a mild fever since yesterday, and I feel very tired…" value=${d.text} onInput=${(e) => set('text', e.target.value)}></textarea>
-          ${SR && html`<button type="button" className=${'mic ' + (listening ? 'live' : '')} onClick=${mic} aria-label="Dictate symptoms"><${Icon} name="mic" size=${18} /></button>`}
+          <textarea rows="4" placeholder="e.g. Sore throat and a mild fever since yesterday, feeling very tired…" value=${d.text} onInput=${(e) => set('text', e.target.value)}></textarea>
+          ${SR && html`<button type="button" className=${'mic ' + (listening ? 'live' : '')} onClick=${mic} aria-label="Dictate symptoms"><${Icon} name="mic" size=${17} /></button>`}
         </div>
-        ${parsed.length > 0 && html`<div className="detected"><${Icon} name="sparkles" size=${14} /> Detected: ${parsed.map(symptomLabel).join(', ')}</div>`}
-        <div className="field"><span>Common symptoms</span>
-          <div className="chips">
-            ${COMMON_SYMPTOM_IDS.map((id) => html`<button key=${id} type="button" className=${'chip ' + (d.symptoms.includes(id) ? 'on' : '')} onClick=${() => toggle('symptoms', id)}>${symptomLabel(id)}</button>`)}
-          </div>
+      <//>
+      ${parsed.length > 0 && html`<p className="detected">Detected: <b>${parsed.map(symptomLabel).join(', ')}</b></p>`}
+      <${Group} title="Common symptoms">
+        <div className="pad chips">
+          ${COMMON_SYMPTOM_IDS.map((id) => html`<button key=${id} type="button" className=${'chip ' + (d.symptoms.includes(id) ? 'on' : '')} onClick=${() => toggle('symptoms', id)}>${symptomLabel(id)}</button>`)}
         </div>
+      <//>
+      <${Group}>
         <details className="more">
-          <summary>More symptoms</summary>
+          <summary><span>More symptoms</span><span className="chev"><${Icon} name="chevron" size=${16} /></span></summary>
           <div className="chips">
             ${SYMPTOMS.filter((s) => !COMMON_SYMPTOM_IDS.includes(s.id)).map((s) => html`<button key=${s.id} type="button" className=${'chip ' + (d.symptoms.includes(s.id) ? 'on' : '') + (s.red ? ' red' : '')} onClick=${() => toggle('symptoms', s.id)}>${s.label}</button>`)}
           </div>
         </details>
-      </div>`}
+      <//>
+    </div>`}
 
-      ${step === 2 && html`<div className="stack">
-        <div><h2>A few more details</h2><p className="muted">How long and how bad? This affects how urgent the advice is.</p></div>
-        <div className="field"><span>How long have you had these symptoms?</span>
-          <div className="chips">
-            ${DURATIONS.map(([v, l]) => html`<button key=${v} type="button" className=${'chip ' + (d.duration === v ? 'on' : '')} onClick=${() => set('duration', v)}>${l}</button>`)}
-          </div>
-        </div>
-        <div className="field"><span>Severity <b className="sev">${d.severity}/10 · ${sevText(Number(d.severity))}</b></span>
+    ${step === 2 && html`<div>
+      <${Group} title="How long?">
+        ${DURATIONS.map(([v, l]) => html`<${Row} key=${v} title=${l} tick=${d.duration === v} onClick=${() => set('duration', v)} />`)}
+      <//>
+      <${Group} title="Severity">
+        <div className="sev">
+          <div className="sev-top"><b>${d.severity}<span className="muted" style=${{ fontWeight: 400, fontSize: 15 }}> / 10</span></b><span className="muted">${sevText(Number(d.severity))}</span></div>
           <input type="range" min="1" max="10" value=${d.severity} onInput=${(e) => set('severity', Number(e.target.value))} style=${{ '--p': ((d.severity - 1) / 9) * 100 + '%' }} />
           <div className="scale"><span>Mild</span><span>Unbearable</span></div>
         </div>
-        <label className="field"><span>Anything else? <i className="muted">(optional)</i></span>
-          <textarea rows="3" placeholder="Medications, recent travel, triggers, what makes it better or worse…" value=${d.notes} onInput=${(e) => set('notes', e.target.value)}></textarea>
-        </label>
-      </div>`}
-    </div>
+      <//>
+      <${Group} title="Notes" footer="Optional. Medications, recent travel, triggers, what helps or hurts.">
+        <textarea rows="3" placeholder="Add details" value=${d.notes} onInput=${(e) => set('notes', e.target.value)}></textarea>
+      <//>
+    </div>`}
 
-    <div className="wiz-actions">
-      <button className="btn ghost" disabled=${step === 0 || busy} onClick=${() => setStep(step - 1)}><${Icon} name="arrowLeft" size=${16} /> Back</button>
+    <div className="actions">
+      ${step > 0 && html`<button className="btn secondary" disabled=${busy} onClick=${() => setStep(step - 1)}>Back</button>`}
       <button className="btn primary" disabled=${!valid[step] || busy} onClick=${next}>
-        ${busy ? html`<span className="spin"></span> Analyzing…` : step < 2 ? html`Continue <${Icon} name="arrowRight" size=${16} />` : html`<${Icon} name="sparkles" size=${16} /> Analyze symptoms`}
+        ${busy ? html`<span className="spin"></span> Analyzing` : step < 2 ? 'Continue' : 'Analyze symptoms'}
       </button>
     </div>
     <${Disclaimer} />
   </div>`;
 }
 
-/* ───────────────────────── Results ───────────────────────── */
-function Section({ icon, title, items, tone }) {
+/* ───────────── Results ───────────── */
+function Items({ title, items }) {
   if (!items?.length) return null;
-  return html`<div className=${'card section ' + (tone || '')}>
-    <h3><${Icon} name=${icon} size=${18} /> ${title}</h3>
-    <ul>${items.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul>
-  </div>`;
+  return html`<${Group} title=${title}>${items.map((t, i) => html`<div className="row item" key=${i}>${t}</div>`)}<//>`;
 }
 
 function Chat({ rec, settings }) {
@@ -199,26 +210,27 @@ function Chat({ rec, settings }) {
     try {
       answer = live ? await geminiChat(settings, rec, history, question) : demoChat(question, rec);
     } catch (e) {
-      answer = `Sorry, I couldn't reach Gemini (${e.message}). ` + demoChat(question, rec);
+      answer = demoChat(question, rec);
     }
     setMsgs((m) => [...m, { role: 'model', text: answer }]);
     setBusy(false);
   }
 
   const suggestions = ['What can I take for this?', 'How long will it last?', 'What should I eat or drink?'];
-  return html`<div className="card chat">
-    <h3><${Icon} name="sparkles" size=${18} /> Ask a follow-up</h3>
-    ${msgs.length === 0 && html`<div className="chips">${suggestions.map((s) => html`<button key=${s} className="chip" onClick=${() => send(s)}>${s}</button>`)}</div>`}
-    <div className="msgs">
-      ${msgs.map((m, i) => html`<div key=${i} className=${'msg ' + m.role}>${m.text}</div>`)}
-      ${busy && html`<div className="msg model typing"><span></span><span></span><span></span></div>`}
-      <div ref=${end}></div>
+  return html`<${Group} title="Ask a follow-up">
+    <div className="chat-box">
+      ${msgs.length === 0 && html`<div className="chips">${suggestions.map((s) => html`<button key=${s} className="chip" onClick=${() => send(s)}>${s}</button>`)}</div>`}
+      ${(msgs.length > 0 || busy) && html`<div className="msgs">
+        ${msgs.map((m, i) => html`<div key=${i} className=${'msg ' + m.role}>${m.text}</div>`)}
+        ${busy && html`<div className="msg model typing"><span></span><span></span><span></span></div>`}
+        <div ref=${end}></div>
+      </div>`}
+      <form className="composer" onSubmit=${(e) => { e.preventDefault(); send(); }}>
+        <input placeholder="Ask about your results" value=${q} onInput=${(e) => setQ(e.target.value)} />
+        <button className="send" disabled=${!q.trim() || busy} aria-label="Send"><${Icon} name="arrowUp" size=${17} /></button>
+      </form>
     </div>
-    <form className="composer" onSubmit=${(e) => { e.preventDefault(); send(); }}>
-      <input placeholder="Ask anything about your results…" value=${q} onInput=${(e) => setQ(e.target.value)} />
-      <button className="btn primary icon" disabled=${!q.trim() || busy} aria-label="Send"><${Icon} name="send" size=${16} /></button>
-    </form>
-  </div>`;
+  <//>`;
 }
 
 export function Results({ rec, notice, settings, onNew, onBack }) {
@@ -242,113 +254,108 @@ export function Results({ rec, notice, settings, onNew, onBack }) {
     });
   }
 
-  return html`<div className="stack-lg fade-in">
-    ${onBack && html`<button className="btn ghost sm" onClick=${onBack}><${Icon} name="arrowLeft" size=${16} /> Back</button>`}
-    ${notice && html`<div className="notice"><${Icon} name="alert" size=${16} /> ${notice}</div>`}
+  return html`<div className="page fade-in">
+    <header className="large">
+      <h1>Results</h1>
+      <p className="lead">${fmtDate(rec.date)}</p>
+    </header>
 
-    <section className=${'urgency ' + u.tone}>
-      <div className="u-icon"><${Icon} name=${r.urgency === 'self-care' ? 'leaf' : r.urgency === 'emergency' ? 'phone' : 'alert'} size=${24} /></div>
-      <div>
-        <div className="u-label">${u.label}</div>
-        <p>${u.advice}</p>
-      </div>
+    ${notice && html`<div className="notice"><${Icon} name="info" size=${16} /><span>${notice}</span></div>`}
+
+    <section className=${'urgency' + (r.urgency === 'emergency' ? ' emergency' : '')}>
+      <${Meter} level=${u.rank} />
+      <div className="u-label">${u.label}</div>
+      <p className="u-advice">${u.advice}</p>
     </section>
 
-    ${r.redFlags?.length > 0 && html`<div className="notice red"><${Icon} name="alert" size=${16} /> <span><b>Warning signs reported:</b> ${r.redFlags.join(', ')}</span></div>`}
+    ${r.redFlags?.length > 0 && html`<div className="notice red"><${Icon} name="alert" size=${16} /><span><b>Warning signs reported:</b> ${r.redFlags.join(', ')}</span></div>`}
 
-    <section className="card">
-      <div className="row between wrap">
-        <h2>Assessment</h2>
-        <span className=${'src ' + rec.source}>${rec.source === 'gemini' ? 'Gemini AI' : 'Demo engine'}</span>
+    <${Group} title="Summary">
+      <div className="pad">
+        <p className="summary">${r.summary}</p>
+        <div className="tags">
+          <span className="tag">${input.age} · ${input.sex}</span>
+          <span className="tag">Severity ${input.severity}/10</span>
+          <span className="tag">${(DURATIONS.find((x) => x[0] === input.duration) || [0, input.duration])[1]}</span>
+        </div>
       </div>
-      <p className="summary">${r.summary}</p>
-      <div className="tags">
-        <span className="tag">${input.age} y · ${input.sex}</span>
-        <span className="tag">Severity ${input.severity}/10</span>
-        <span className="tag">${(DURATIONS.find((x) => x[0] === input.duration) || [0, input.duration])[1]}</span>
-      </div>
-    </section>
+    <//>
 
-    ${r.conditions.length > 0 && html`<section className="stack">
-      <h2 className="sec-title">Possible conditions</h2>
-      <div className="grid2">
-        ${r.conditions.map((c, i) => html`<div className="card cond" key=${c.name}>
-          <div className="row between">
-            <h3>${c.name}</h3><span className="pct">${c.likelihood}%</span>
-          </div>
-          <div className="bar"><i style=${{ width: c.likelihood + '%', animationDelay: i * 80 + 'ms' }}></i></div>
-          <p className="muted">${c.description}</p>
-          ${c.why && html`<p className="why">${c.why}</p>`}
-        </div>`)}
-      </div>
-    </section>`}
+    ${r.conditions.length > 0 && html`<${Group} title="Possible conditions" footer="Likelihoods are rough estimates, not a diagnosis.">
+      ${r.conditions.map((c, i) => html`<div className="pad cond" key=${c.name}>
+        <div className="cond-top"><b>${c.name}</b><span>${c.likelihood}%</span></div>
+        <div className="bar"><i style=${{ width: c.likelihood + '%', animationDelay: i * 70 + 'ms' }}></i></div>
+        <p>${c.description}</p>
+        ${c.why && html`<p className="why">${c.why}</p>`}
+      </div>`)}
+    <//>`}
 
-    <section className="grid3 equal">
-      <${Section} icon="pill" title="Treatment options" items=${r.treatments} />
-      <${Section} icon="leaf" title="Self-care at home" items=${r.selfCare} />
-      <${Section} icon="alert" title="See a doctor if…" items=${r.seeDoctor} tone="warn" />
-    </section>
+    <${Items} title="Treatment options" items=${r.treatments} />
+    <${Items} title="Self-care" items=${r.selfCare} />
+    <${Items} title="See a doctor if" items=${r.seeDoctor} />
 
     <${Chat} rec=${rec} settings=${settings} />
 
-    <div className="row wrap">
-      <button className="btn primary" onClick=${onNew}><${Icon} name="plus" size=${16} /> New check</button>
-      <button className="btn ghost" onClick=${copy}><${Icon} name=${copied ? 'check' : 'copy'} size=${16} /> ${copied ? 'Copied' : 'Copy summary'}</button>
+    <div className="actions">
+      <button className="btn secondary" onClick=${copy}>${copied ? 'Copied' : 'Copy summary'}</button>
+      <button className="btn primary" onClick=${onNew}>New check</button>
     </div>
     <${Disclaimer} />
   </div>`;
 }
 
-/* ───────────────────────── History ───────────────────────── */
+/* ───────────── History ───────────── */
 export function History({ items, onOpen, onDelete, onClear, onStart }) {
   if (!items.length)
-    return html`<div className="empty fade-in">
-      <div className="icon-badge lg"><${Icon} name="history" size=${26} /></div>
-      <h2>No checks yet</h2>
-      <p className="muted">Your past symptom checks are saved privately on this device.</p>
-      <button className="btn primary" onClick=${onStart}>Start a check</button>
+    return html`<div className="page fade-in">
+      <header className="large"><h1>History</h1></header>
+      <div className="empty">
+        <div className="big"><${Icon} name="history" size=${44} /></div>
+        <h2 className="title-2" style=${{ fontSize: 22 }}>No checks yet</h2>
+        <p className="muted">Past checks are saved privately on this device.</p>
+        <button className="btn primary" onClick=${onStart}>Start a check</button>
+      </div>
     </div>`;
-  return html`<div className="stack fade-in">
-    <div className="row between"><h2>History</h2><button className="btn ghost sm" onClick=${onClear}><${Icon} name="trash" size=${14} /> Clear all</button></div>
-    ${items.map((rec) => {
-      const u = URGENCY[rec.result.urgency] || URGENCY.soon;
-      return html`<div className="card hist" key=${rec.id}>
-        <button className="hist-main" onClick=${() => onOpen(rec)}>
-          <div className=${'dot-u ' + u.tone}></div>
-          <div className="hist-body">
-            <b>${rec.result.conditions[0]?.name || 'No clear match'}</b>
-            <span className="muted">${[...new Set([...rec.input.symptoms, ...parseText(rec.input.text)])].map(symptomLabel).slice(0, 4).join(', ') || 'Free-text description'}</span>
-            <span className="muted small">${fmtDate(rec.date)} · ${u.short}</span>
-          </div>
-        </button>
-        <button className="icon-btn" aria-label="Delete" onClick=${() => onDelete(rec.id)}><${Icon} name="trash" size=${16} /></button>
-      </div>`;
-    })}
+  return html`<div className="page fade-in">
+    <header className="large"><h1>History</h1></header>
+    <${Group}>
+      ${items.map((rec) => {
+        const u = URGENCY[rec.result.urgency] || URGENCY.soon;
+        const syms = [...new Set([...rec.input.symptoms, ...parseText(rec.input.text)])].map(symptomLabel).slice(0, 4).join(', ');
+        return html`<div className="hist" key=${rec.id}>
+          <${Row} title=${rec.result.conditions[0]?.name || 'No clear match'} sub=${(syms || 'Free-text description') + ' · ' + fmtDate(rec.date)} trail=${html`<${Meter} level=${u.rank} small />`} onClick=${() => onOpen(rec)} />
+          <button className="icon-btn" aria-label="Delete" onClick=${() => onDelete(rec.id)}><${Icon} name="trash" size=${17} /></button>
+        </div>`;
+      })}
+    <//>
+    <${Group}><${Row} danger title="Clear history" onClick=${onClear} /><//>
   </div>`;
 }
 
-/* ───────────────────────── Settings ───────────────────────── */
+/* ───────────── Settings sheet ───────────── */
 export function Settings({ settings, onSave, onClose }) {
   const [s, setS] = useState(settings);
   return html`<div className="overlay" onClick=${onClose}>
-    <div className="modal" role="dialog" aria-modal="true" aria-label="Settings" onClick=${(e) => e.stopPropagation()}>
-      <div className="row between"><h2>Settings</h2><button className="icon-btn" onClick=${onClose} aria-label="Close"><${Icon} name="x" size=${18} /></button></div>
-      <p className="muted">Connect Google Gemini for real AI analysis. Without a key, AICura uses its built-in demo engine.</p>
-      <label className="field"><span>Gemini API key</span>
-        <input type="password" autoComplete="off" placeholder="AIza…" value=${s.apiKey} onInput=${(e) => setS({ ...s, apiKey: e.target.value.trim() })} />
-        <small className="muted">Stored only in this browser (localStorage) and sent directly to Google. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.</small>
-      </label>
-      <label className="field"><span>Model</span>
-        <input value=${s.model} placeholder=${DEFAULT_MODEL} onInput=${(e) => setS({ ...s, model: e.target.value.trim() })} />
-      </label>
-      <label className="switch">
-        <input type="checkbox" checked=${s.demo} onChange=${(e) => setS({ ...s, demo: e.target.checked })} />
-        <span>Force demo mode (ignore API key)</span>
-      </label>
-      <div className="row end">
-        <button className="btn ghost" onClick=${() => onSave({ apiKey: '', model: DEFAULT_MODEL, demo: false })}>Remove key</button>
-        <button className="btn primary" onClick=${() => onSave({ ...s, model: s.model || DEFAULT_MODEL })}>Save</button>
+    <div className="sheet" role="dialog" aria-modal="true" aria-label="Settings" onClick=${(e) => e.stopPropagation()}>
+      <div className="sheet-bar">
+        <button className="l" onClick=${onClose}>Cancel</button>
+        <h2>Settings</h2>
+        <button className="r" onClick=${() => onSave({ ...s, model: s.model || DEFAULT_MODEL })}>Done</button>
       </div>
+      <${Group} title="Detailed analysis" footer=${html`Optional. Connect your own Google API key for more detailed results. It stays on this device. Get one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.`}>
+        <label className="row field-row"><span className="t">API key</span>
+          <input type="password" autoComplete="off" placeholder="AIza…" value=${s.apiKey} onInput=${(e) => setS({ ...s, apiKey: e.target.value.trim() })} />
+        </label>
+        <label className="row field-row"><span className="t">Model</span>
+          <input value=${s.model} placeholder=${DEFAULT_MODEL} onInput=${(e) => setS({ ...s, model: e.target.value.trim() })} />
+        </label>
+      <//>
+      <${Group} footer="Turn on to use basic on-device results only.">
+        <label className="row"><span className="body"><span className="t">Basic mode</span></span>
+          <span className="switch"><input type="checkbox" checked=${s.demo} onChange=${(e) => setS({ ...s, demo: e.target.checked })} /><i></i></span>
+        </label>
+      <//>
+      ${settings.apiKey && html`<${Group}><${Row} danger title="Remove API key" onClick=${() => onSave({ apiKey: '', model: DEFAULT_MODEL, demo: false })} /><//>`}
     </div>
   </div>`;
 }

@@ -78,7 +78,7 @@ export function localAnalyze(input) {
     return {
       summary: syms.length
         ? 'Your symptoms did not clearly match a known pattern in the built-in engine.'
-        : "I couldn't recognise specific symptoms from your description. Try picking symptoms from the list, or connect Gemini in Settings for full free-text understanding.",
+        : "We couldn't recognize specific symptoms from your description. Try adding more detail or picking symptoms from the list.",
       urgency: floor,
       conditions: [],
       treatments: [],
@@ -126,5 +126,5 @@ export function demoChat(question, rec) {
     return 'If you have a fever, vomiting or are very unwell, rest at home and avoid contact with others. Return to normal activity gradually once you are fever-free and feeling better.';
   if (/\b(doctor|hospital|emergency|serious|worried|dangerous)\b/.test(q))
     return 'Seek urgent care for trouble breathing, chest pain, confusion, severe or sudden pain, a stiff neck with fever, signs of dehydration, or if you simply feel something is seriously wrong. Trust your instincts – it is always okay to get checked.';
-  return 'I can share general guidance here, but for specific questions the demo engine is limited. Add a Gemini API key in Settings for richer, conversational answers – and always check with a healthcare professional for personal medical advice.';
+  return "I can only share general guidance for that. For advice specific to you, please speak with a doctor or pharmacist, especially if your symptoms are getting worse.";
 }

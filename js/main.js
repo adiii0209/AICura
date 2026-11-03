@@ -19,7 +19,6 @@ function App() {
   const [formKey, setFormKey] = useState(0);
 
   const live = !!settings.apiKey && !settings.demo;
-  const mode = { gemini: live, model: settings.model || DEFAULT_MODEL };
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -46,7 +45,7 @@ function App() {
         result.urgency = maxUrgency(result.urgency, urgencyFloor(input));
         source = 'gemini';
       } catch (e) {
-        note = `Gemini couldn't be reached (${e.message}). Showing results from the built-in demo engine instead.`;
+        note = "Detailed analysis isn't available right now, so this is a basic assessment. Check your connection and API key in Settings.";
       }
     }
     if (!result) result = localAnalyze(input);
@@ -95,7 +94,7 @@ function App() {
     <header className="topbar">
       <div className="topbar-in">
         <button className="brand" onClick=${() => go('home')} aria-label="AICura home">
-          <span className="logo"><${Icon} name="logo" size=${20} /></span><span>AICura</span>
+          AICura
         </button>
         <nav className="nav">
           ${tabs.map(([id, label, icon]) => html`<button key=${id} className=${active === id ? 'on' : ''} onClick=${() => (id === 'check' ? newCheck() : go(id))}>${label}</button>`)}
@@ -105,7 +104,7 @@ function App() {
     </header>
 
     <main className="main">
-      ${view === 'home' && html`<${Home} mode=${mode} historyCount=${history.length} onStart=${newCheck} onHistory=${() => go('history')} />`}
+      ${view === 'home' && html`<${Home} historyCount=${history.length} onStart=${newCheck} onHistory=${() => go('history')} />`}
       ${view === 'check' && html`<${Wizard} key=${formKey} busy=${busy} onSubmit=${analyze} initial=${{ ...BLANK, ...profile }} />`}
       ${view === 'result' && current && html`<${Results} rec=${current} notice=${notice} settings=${settings} onNew=${newCheck} />`}
       ${view === 'history' && html`<${History} items=${history} onStart=${newCheck} onDelete=${removeItem} onClear=${clearAll}
